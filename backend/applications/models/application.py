@@ -37,7 +37,9 @@ class JobApplication(models.Model):
     )
     company = models.ForeignKey(
         Company,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name="job_applications",
     )
 
@@ -84,4 +86,5 @@ class JobApplication(models.Model):
         ordering = ["-created_at"]
 
     def __str__(self):
-        return f"{self.title} at {self.company.name}"
+        company_name = self.company.name if self.company else "No company"
+        return f"{self.title} at {company_name}"
