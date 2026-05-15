@@ -1,0 +1,62 @@
+"use client"
+
+import { Toaster as Sonner, type ToasterProps } from "sonner"
+import { CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon, Loader2Icon } from "lucide-react"
+
+import { useAppTheme } from "@/lib/theme"
+
+const Toaster = ({ ...props }: ToasterProps) => {
+  const { theme } = useAppTheme()
+
+  return (
+    <Sonner
+      theme={theme as ToasterProps["theme"]}
+      className="toaster group"
+      position="bottom-right"
+      icons={{
+        success: (
+          <CircleCheckIcon className="size-4" />
+        ),
+        info: (
+          <InfoIcon className="size-4" />
+        ),
+        warning: (
+          <TriangleAlertIcon className="size-4" />
+        ),
+        error: (
+          <OctagonXIcon className="size-4" />
+        ),
+        loading: (
+          <Loader2Icon className="size-4 animate-spin" />
+        ),
+      }}
+      style={
+        {
+          "--normal-bg": "var(--popover)",
+          "--normal-text": "var(--popover-foreground)",
+          "--normal-border": "var(--border)",
+          "--success-bg": "var(--popover)",
+          "--success-text": "var(--popover-foreground)",
+          "--success-border": "var(--primary)",
+          "--error-bg": "var(--popover)",
+          "--error-text": "var(--popover-foreground)",
+          "--error-border": "var(--destructive)",
+          "--border-radius": "var(--radius)",
+        } as React.CSSProperties
+      }
+      toastOptions={{
+        classNames: {
+          toast:
+            "border bg-popover text-popover-foreground shadow-xl shadow-black/10 dark:shadow-black/30",
+          description: "text-muted-foreground",
+          icon: "text-primary",
+          actionButton: "bg-primary text-primary-foreground",
+          cancelButton: "bg-muted text-muted-foreground",
+        },
+      }}
+      {...props}
+    />
+  )
+}
+
+export { Toaster }
