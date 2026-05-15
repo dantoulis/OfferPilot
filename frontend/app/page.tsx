@@ -1,9 +1,5 @@
-export default function Home() {
-  return (
-    <div>
-      <main className="bg-red-500">
-        <span>OfferPilot</span>
-      </main>
-    </div>
-  );
-}
+import { Dashboard } from "@/components/offerpilot/dashboard"
+
+const Home = () => <Dashboard />
+
+export default Home
