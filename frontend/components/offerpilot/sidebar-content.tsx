@@ -14,6 +14,7 @@ import { ThemeToggle } from "@/components/offerpilot/theme-toggle"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
+import type { User } from "@/features/auth/types"
 import { cn } from "@/lib/utils"
 
 const navItems = [
@@ -24,7 +25,20 @@ const navItems = [
   { href: "/settings", label: "Settings", icon: Settings },
 ]
 
-export const SidebarContent = ({ pathname }: { pathname: string }) => (
+const getInitials = (user?: User) => {
+  const source = user?.username || user?.email || "OfferPilot"
+  return source.slice(0, 2).toUpperCase()
+}
+
+export const SidebarContent = ({
+  pathname,
+  user,
+  onLogout,
+}: {
+  pathname: string
+  user?: User
+  onLogout?: () => void
+}) => (
   <div className="flex h-full flex-col p-4">
     <Link className="mb-8 flex items-center gap-3 rounded-lg px-2 py-2" href="/">
       <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-sm font-semibold text-primary-foreground">
@@ -32,7 +46,7 @@ export const SidebarContent = ({ pathname }: { pathname: string }) => (
       </div>
       <div>
         <p className="font-semibold">OfferPilot</p>
-        <p className="text-xs text-muted-foreground">Find the right role</p>
+        <p className="text-xs text-sidebar-foreground/65">Find the right role</p>
       </div>
     </Link>
     <nav className="grid gap-1">
@@ -47,8 +61,9 @@ export const SidebarContent = ({ pathname }: { pathname: string }) => (
         return (
           <Link
             className={cn(
-              "flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-all hover:translate-x-0.5 hover:bg-primary/10 hover:text-primary",
-              isActive && "bg-primary/10 text-primary shadow-sm"
+              "flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground/70 transition-all hover:translate-x-0.5 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+              isActive &&
+                "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm ring-1 ring-sidebar-border"
             )}
             href={item.href}
             key={item.href}
@@ -64,13 +79,17 @@ export const SidebarContent = ({ pathname }: { pathname: string }) => (
       <Separator />
       <div className="flex items-center gap-3 px-2">
         <Avatar size="sm">
-          <AvatarFallback>DA</AvatarFallback>
+          <AvatarFallback>{getInitials(user)}</AvatarFallback>
         </Avatar>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium">Dante</p>
-          <p className="truncate text-xs text-muted-foreground">dante@example.com</p>
+          <p className="truncate text-sm font-medium">
+            {user?.username ?? "Account"}
+          </p>
+          <p className="truncate text-xs text-sidebar-foreground/65">
+            {user?.email ?? "Signed in"}
+          </p>
         </div>
-        <Button size="icon-sm" variant="ghost">
+        <Button size="icon-sm" variant="ghost" onClick={onLogout}>
           <LogOut className="size-4" />
           <span className="sr-only">Logout</span>
         </Button>

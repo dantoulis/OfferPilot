@@ -1,4 +1,8 @@
+"use client"
+
 import { Bell, Palette, ShieldCheck, UserRound } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 
 import { AppShell } from "@/components/offerpilot/app-shell"
 import { ThemeToggle } from "@/components/offerpilot/theme-toggle"
@@ -14,9 +18,26 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
+import { useLogoutMutation, useMeQuery } from "@/features/auth/hooks"
+import { getApiErrorMessage } from "@/lib/api-client"
 
-const SettingsPage = () => (
-  <AppShell>
+const SettingsPage = () => {
+  const meQuery = useMeQuery()
+  const logoutMutation = useLogoutMutation()
+  const router = useRouter()
+  const user = meQuery.data
+
+  const handleLogout = async () => {
+    try {
+      await logoutMutation.mutateAsync()
+      router.push("/login")
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Could not log out"))
+    }
+  }
+
+  return (
+    <AppShell>
       <div className="flex w-full max-w-none flex-col gap-6 px-3 py-6 sm:px-4 lg:px-5 xl:px-6">
         <section>
           <p className="text-sm text-muted-foreground">Workspace preferences</p>
@@ -101,13 +122,13 @@ const SettingsPage = () => (
               <CardContent className="grid gap-4">
                 <div className="grid gap-2">
                   <Label>Name</Label>
-                  <Input defaultValue="Dante" />
+                  <Input readOnly value={user?.username ?? ""} />
                 </div>
                 <div className="grid gap-2">
                   <Label>Email</Label>
-                  <Input defaultValue="dante@example.com" />
+                  <Input readOnly value={user?.email ?? ""} />
                 </div>
-                <Button>Save profile</Button>
+                <Button disabled variant="outline">Profile editing coming later</Button>
               </CardContent>
             </Card>
 
@@ -122,15 +143,21 @@ const SettingsPage = () => (
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button variant="outline" className="w-full">
-                  Logout all sessions
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  disabled={logoutMutation.isPending}
+                  onClick={handleLogout}
+                >
+                  {logoutMutation.isPending ? "Logging out..." : "Logout"}
                 </Button>
               </CardContent>
             </Card>
           </aside>
         </div>
       </div>
-  </AppShell>
-)
+    </AppShell>
+  )
+}
 
 export default SettingsPage

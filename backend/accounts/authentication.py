@@ -2,8 +2,19 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from .auth_cookies import ACCESS_COOKIE_NAME
 
 
+AUTH_COOKIE_BYPASS_PATHS = {
+    "/auth/login/",
+    "/auth/logout/",
+    "/auth/refresh/",
+    "/auth/register/",
+}
+
+
 class CookieJWTAuthentication(JWTAuthentication):
     def authenticate(self, request):
+        if request.path_info in AUTH_COOKIE_BYPASS_PATHS:
+            return None
+
         header = self.get_header(request)
 
         if header is not None:

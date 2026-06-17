@@ -22,6 +22,9 @@ class Command(BaseCommand):
         if created:
             user.set_password("demo")
             user.save(update_fields=["password"])
+        elif not user.check_password("demo"):
+            user.set_password("demo")
+            user.save(update_fields=["password"])
 
         today = date.today()
         seed_rows = [
