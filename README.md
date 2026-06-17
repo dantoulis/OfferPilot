@@ -77,7 +77,17 @@ AUTH_COOKIE_SECURE=false
 AUTH_COOKIE_SAMESITE=Lax
 ```
 
-Create the database in PostgreSQL if it does not exist yet, then run:
+PostgreSQL must already be installed and running before the backend can start. Django migrations create the database tables, but they do not install PostgreSQL or create the database itself.
+
+Create the database with any PostgreSQL client, such as DBeaver, pgAdmin, or the `psql` command-line tool. The database name must match `DB_NAME` in `backend/.env`.
+
+For example, with `psql`:
+
+```powershell
+psql -U postgres -c "CREATE DATABASE offerpilot;"
+```
+
+If the database already exists, skip that command. Then run:
 
 ```powershell
 python manage.py migrate
