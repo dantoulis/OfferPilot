@@ -21,7 +21,11 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart"
-import { statusChartData, trendChartData } from "@/lib/mock-data"
+
+type AnalyticsCardsProps = {
+  statusChartData: Array<{ count: number; status: string }>
+  trendChartData: Array<{ applications: number; interviews: number; week: string }>
+}
 
 const statusConfig = {
   count: {
@@ -41,7 +45,10 @@ const trendConfig = {
   },
 } satisfies ChartConfig
 
-export const AnalyticsCards = () => (
+export const AnalyticsCards = ({
+  statusChartData,
+  trendChartData,
+}: AnalyticsCardsProps) => (
   <div className="grid gap-4 xl:grid-cols-2">
     <Card>
       <CardHeader>

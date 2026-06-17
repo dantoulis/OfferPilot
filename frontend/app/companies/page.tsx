@@ -1,11 +1,13 @@
+"use client"
+
 import Link from "next/link"
 import {
   ExternalLink,
-  MoreHorizontal,
   Search,
 } from "lucide-react"
 
 import { AppShell } from "@/components/offerpilot/app-shell"
+import { DeleteCompanyDialog } from "@/components/offerpilot/delete-company-dialog"
 import { NewCompanyDialog } from "@/components/offerpilot/new-company-dialog"
 import { StatusBadge } from "@/components/offerpilot/status-badge"
 import { Badge } from "@/components/ui/badge"
@@ -17,12 +19,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -39,9 +35,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { applications, companies } from "@/lib/mock-data"
+import { companySortLabels } from "@/features/companies/constants"
+import { useCompaniesViewModel } from "@/features/companies/hooks"
+import { useAppDispatch } from "@/store/hooks"
+import { setCompanySearch, setCompanySort } from "@/store/ui-slice"
 
 const CompaniesPage = () => {
+  const dispatch = useAppDispatch()
+  const viewModel = useCompaniesViewModel()
+
   return (
     <AppShell>
       <div className="flex w-full max-w-none flex-col gap-6 px-3 py-6 sm:px-4 lg:px-5 xl:px-6">
@@ -62,56 +64,63 @@ const CompaniesPage = () => {
           <CardHeader className="gap-4 xl:flex xl:flex-row xl:items-center xl:justify-between">
             <div>
               <CardTitle>Company directory</CardTitle>
-              <CardDescription>Search, sort, and inspect company activity.</CardDescription>
+              <CardDescription>Search, sort, edit, and inspect company activity.</CardDescription>
             </div>
-            <div className="grid gap-2 sm:grid-cols-[minmax(220px,1fr)_auto_auto] xl:w-[620px]">
+            <div className="grid gap-2 sm:grid-cols-[minmax(220px,1fr)_auto] xl:w-[620px]">
               <div className="relative">
                 <Search className="pointer-events-none absolute left-2.5 top-2 size-4 text-muted-foreground" />
-                <Input className="pl-8" placeholder="Search company or location" />
+                <Input
+                  className="pl-8"
+                  placeholder="Search company or location"
+                  value={viewModel.query}
+                  onChange={(event) => dispatch(setCompanySearch(event.target.value))}
+                />
               </div>
-              <Select defaultValue="active">
-                <SelectTrigger className="w-full sm:w-36">
+              <Select
+                value={viewModel.sort}
+                onValueChange={(value) =>
+                  dispatch(setCompanySort(value as typeof viewModel.sort))
+                }
+              >
+                <SelectTrigger className="w-full sm:w-44">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="active">Active apps</SelectItem>
-                  <SelectItem value="name">Name</SelectItem>
-                  <SelectItem value="updated">Recently updated</SelectItem>
+                  {Object.entries(companySortLabels).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
-              <Button variant="outline">Filters</Button>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {companies.map((company) => {
-                const related = applications.filter(
-                  (application) => application.companyId === company.id
-                )
-                const topStatus = related[0]?.status ?? "saved"
-
-                return (
+            {viewModel.isLoading ? (
+              <div className="rounded-xl border border-dashed p-8 text-sm text-muted-foreground">
+                Loading companies...
+              </div>
+            ) : viewModel.isError ? (
+              <div className="rounded-xl border border-dashed p-8 text-sm text-destructive">
+                Could not load companies.
+              </div>
+            ) : viewModel.companies.length === 0 ? (
+              <div className="rounded-xl border border-dashed p-8 text-sm text-muted-foreground">
+                No companies match the current filters.
+              </div>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {viewModel.companies.map((company) => (
                   <Card className="bg-background" key={company.id}>
                     <CardHeader>
                       <div className="flex items-start gap-3">
                         <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 font-semibold text-primary">
-                          {company.name.slice(0, 2)}
+                          {company.name.slice(0, 2).toUpperCase()}
                         </div>
                         <div className="min-w-0 flex-1">
                           <CardTitle className="truncate">{company.name}</CardTitle>
-                          <CardDescription>{company.location}</CardDescription>
+                          <CardDescription>{company.location || "No location"}</CardDescription>
                         </div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger render={<Button size="icon-sm" variant="ghost" />}>
-                            <MoreHorizontal className="size-4" />
-                            <span className="sr-only">Company actions</span>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem>Edit company</DropdownMenuItem>
-                            <DropdownMenuItem>View applications</DropdownMenuItem>
-                            <DropdownMenuItem variant="destructive">Delete</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
                       </div>
                     </CardHeader>
                     <CardContent className="grid gap-4">
@@ -119,30 +128,39 @@ const CompaniesPage = () => {
                         <Badge variant="secondary">
                           {company.activeApplications} active
                         </Badge>
-                        <StatusBadge status={topStatus} />
+                        <StatusBadge status={company.topStatus} />
                       </div>
                       <p className="line-clamp-3 text-sm text-muted-foreground">
-                        {company.notes}
+                        {company.notes || "No notes yet."}
                       </p>
-                      <div className="flex items-center justify-between gap-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
                         <span className="text-xs text-muted-foreground">
                           Updated {company.lastActivity}
                         </span>
-                        <Button
-                          nativeButton={false}
-                          render={<Link href={company.website} />}
-                          size="sm"
-                          variant="outline"
-                        >
-                          <ExternalLink className="size-3.5" />
-                          Website
-                        </Button>
+                        <div className="flex gap-2">
+                          <NewCompanyDialog company={company} label="Edit" />
+                          {company.website ? (
+                            <Button
+                              nativeButton={false}
+                              render={<Link href={company.website} />}
+                              size="sm"
+                              variant="outline"
+                            >
+                              <ExternalLink className="size-3.5" />
+                              Website
+                            </Button>
+                          ) : null}
+                          <DeleteCompanyDialog
+                            companyId={company.id}
+                            companyName={company.name}
+                          />
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
-                )
-              })}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -163,14 +181,14 @@ const CompaniesPage = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {companies.map((company) => (
+                {viewModel.companies.map((company) => (
                   <TableRow key={company.id}>
                     <TableCell className="font-medium">{company.name}</TableCell>
-                    <TableCell>{company.location}</TableCell>
+                    <TableCell>{company.location || "No location"}</TableCell>
                     <TableCell>{company.activeApplications}</TableCell>
                     <TableCell>{company.lastActivity}</TableCell>
                     <TableCell className="max-w-[340px] truncate text-muted-foreground">
-                      {company.notes}
+                      {company.notes || "No notes yet."}
                     </TableCell>
                   </TableRow>
                 ))}

@@ -1,7 +1,6 @@
 "use client"
 
 import { Trash2 } from "lucide-react"
-import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 
 import {
@@ -16,45 +15,38 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
-import { useDeleteApplicationMutation } from "@/features/applications/hooks"
+import { useDeleteCompanyMutation } from "@/features/companies/hooks"
 import { getApiErrorMessage } from "@/lib/api-client"
 
-export const DeleteApplicationDialog = ({
-  applicationId,
-  title,
-  redirectAfterDelete = false,
+export const DeleteCompanyDialog = ({
+  companyId,
+  companyName,
 }: {
-  applicationId: string
-  title: string
-  redirectAfterDelete?: boolean
+  companyId: string
+  companyName: string
 }) => {
-  const router = useRouter()
-  const deleteMutation = useDeleteApplicationMutation()
+  const deleteMutation = useDeleteCompanyMutation()
 
   const handleDelete = async () => {
     try {
-      await deleteMutation.mutateAsync(applicationId)
-      toast.success("Application deleted")
-
-      if (redirectAfterDelete) {
-        router.push("/applications")
-      }
+      await deleteMutation.mutateAsync(companyId)
+      toast.success("Company deleted")
     } catch (error) {
-      toast.error(getApiErrorMessage(error, "Could not delete application"))
+      toast.error(getApiErrorMessage(error, "Could not delete company"))
     }
   }
 
   return (
     <AlertDialog>
-      <AlertDialogTrigger render={<Button variant="destructive" />}>
+      <AlertDialogTrigger render={<Button size="sm" variant="destructive" />}>
         <Trash2 className="size-4" />
         Delete
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete this application?</AlertDialogTitle>
+          <AlertDialogTitle>Delete this company?</AlertDialogTitle>
           <AlertDialogDescription>
-            This permanently removes {title} from your job search pipeline.
+            This removes {companyName}. Existing applications will keep running with no company attached.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -64,7 +56,7 @@ export const DeleteApplicationDialog = ({
             variant="destructive"
             onClick={handleDelete}
           >
-            {deleteMutation.isPending ? "Deleting..." : "Delete application"}
+            {deleteMutation.isPending ? "Deleting..." : "Delete company"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

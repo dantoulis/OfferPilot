@@ -6,15 +6,15 @@ import {
   CheckCircle2,
   Clock3,
   Columns3,
-  Filter,
   ListFilter,
   Search,
   TrendingUp,
 } from "lucide-react"
+import { toast } from "sonner"
 
 import { AnalyticsCards } from "@/components/offerpilot/analytics-cards"
-import { ApplicationFormPreview } from "@/components/offerpilot/application-form-preview"
 import { ApplicationBoard } from "@/components/offerpilot/application-board"
+import { ApplicationFormDialog } from "@/components/offerpilot/application-form-dialog"
 import { AppShell } from "@/components/offerpilot/app-shell"
 import { MetricCard } from "@/components/offerpilot/metric-card"
 import { Badge } from "@/components/ui/badge"
@@ -34,19 +34,50 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import {
-  applications,
-} from "@/lib/mock-data"
 import { Input } from "@/components/ui/input"
 import { Progress } from "@/components/ui/progress"
+import {
+  applicationSortLabels,
+  statusLabels,
+  statusOrder,
+} from "@/features/applications/constants"
+import {
+  useDashboardViewModel,
+  useMoveApplicationStatusMutation,
+} from "@/features/applications/hooks"
+import type { ApplicationStatus } from "@/features/applications/types"
+import { useMeQuery } from "@/features/auth/hooks"
+import { getApiErrorMessage } from "@/lib/api-client"
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
+import {
+  setApplicationSearch,
+  setApplicationSort,
+  setApplicationStatusFilter,
+  setDashboardView,
+} from "@/store/ui-slice"
 
 export const Dashboard = () => {
-  const activeApplications = applications.filter((item) => item.active)
-  const interviews = applications.filter((item) =>
-    ["interviewing", "technical_test"].includes(item.status)
+  const dispatch = useAppDispatch()
+  const dashboardView = useAppSelector((state) => state.ui.dashboardView)
+  const viewModel = useDashboardViewModel()
+  const moveMutation = useMoveApplicationStatusMutation()
+  const meQuery = useMeQuery()
+  const metricIcons = [Briefcase, CalendarDays, CheckCircle2, Clock3, TrendingUp]
+  const responseRate = Number(
+    viewModel.metrics[4]?.value.replace("%", "") ?? 0
   )
-  const offers = applications.filter((item) => item.status === "offer")
-  const deadlines = applications.filter((item) => item.deadline)
+
+  const handleMoveApplication = async (
+    application: { id: string; title: string },
+    status: ApplicationStatus
+  ) => {
+    try {
+      await moveMutation.moveApplication(application.id, status)
+      toast.success(`${application.title} moved to ${statusLabels[status]}`)
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, "Could not move application"))
+    }
+  }
 
   return (
     <AppShell>
@@ -57,7 +88,7 @@ export const Dashboard = () => {
               Dashboard + board hybrid
             </Badge>
             <h2 className="text-2xl font-semibold tracking-normal sm:text-3xl">
-              Good morning, Dante
+              Good morning, {meQuery.data?.username ?? "there"}
             </h2>
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground sm:text-base">
               Track every opportunity, spot the next action, and keep your job
@@ -65,49 +96,21 @@ export const Dashboard = () => {
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">
-            <Button variant="outline">
-              <Filter className="size-4" />
-              Saved filters
-            </Button>
-            <ApplicationFormPreview />
+            <ApplicationFormDialog />
           </div>
         </section>
 
         <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-          <MetricCard
-            detail="8 currently in review"
-            icon={Briefcase}
-            title="Active applications"
-            value={String(activeApplications.length)}
-          />
-          <MetricCard
-            detail="2 need prep this week"
-            icon={CalendarDays}
-            title="Interviews"
-            tone="amber"
-            value={String(interviews.length)}
-          />
-          <MetricCard
-            detail="1 response due soon"
-            icon={CheckCircle2}
-            title="Offers"
-            tone="green"
-            value={String(offers.length)}
-          />
-          <MetricCard
-            detail="Deadlines in next 7 days"
-            icon={Clock3}
-            title="Deadlines"
-            tone="red"
-            value={String(deadlines.length)}
-          />
-          <MetricCard
-            detail="+6% from last month"
-            icon={TrendingUp}
-            title="Response rate"
-            tone="blue"
-            value="38%"
-          />
+          {viewModel.metrics.map((metric, index) => (
+            <MetricCard
+              detail={metric.detail}
+              icon={metricIcons[index]}
+              key={metric.title}
+              title={metric.title}
+              tone={metric.tone}
+              value={metric.value}
+            />
+          ))}
         </section>
 
         <section className="grid gap-6 xl:grid-cols-[1fr_360px]">
@@ -116,33 +119,54 @@ export const Dashboard = () => {
               <div>
                 <CardTitle>Application workspace</CardTitle>
                 <CardDescription>
-                  Switch between a visual board, sortable table, and quick analytics.
+                  Switch between a visual board and quick analytics.
                 </CardDescription>
               </div>
               <div className="grid gap-2 sm:grid-cols-[minmax(220px,1fr)_auto_auto_auto] xl:w-[760px]">
                 <div className="relative">
                   <Search className="pointer-events-none absolute left-2.5 top-2 size-4 text-muted-foreground" />
-                  <Input className="pl-8" placeholder="Search roles, companies, locations" />
+                  <Input
+                    className="pl-8"
+                    placeholder="Search roles, companies, locations"
+                    value={viewModel.filters.query}
+                    onChange={(event) =>
+                      dispatch(setApplicationSearch(event.target.value))
+                    }
+                  />
                 </div>
-                <Select defaultValue="all">
+                <Select
+                  value={viewModel.filters.status}
+                  onValueChange={(value) =>
+                    dispatch(setApplicationStatusFilter(value as typeof viewModel.filters.status))
+                  }
+                >
                   <SelectTrigger className="w-full sm:w-32">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All statuses</SelectItem>
-                    <SelectItem value="interviewing">Interviewing</SelectItem>
-                    <SelectItem value="offer">Offer</SelectItem>
-                    <SelectItem value="deadline">Deadline soon</SelectItem>
+                    {statusOrder.map((status) => (
+                      <SelectItem key={status} value={status}>
+                        {statusLabels[status]}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
-                <Select defaultValue="priority">
+                <Select
+                  value={viewModel.filters.sort}
+                  onValueChange={(value) =>
+                    dispatch(setApplicationSort(value as typeof viewModel.filters.sort))
+                  }
+                >
                   <SelectTrigger className="w-full sm:w-32">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="priority">Priority</SelectItem>
-                    <SelectItem value="deadline">Deadline</SelectItem>
-                    <SelectItem value="company">Company</SelectItem>
+                    {Object.entries(applicationSortLabels).map(([value, label]) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <Button variant="outline">
@@ -152,7 +176,21 @@ export const Dashboard = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <Tabs defaultValue="board">
+              {viewModel.isLoading ? (
+                <div className="rounded-xl border border-dashed p-8 text-sm text-muted-foreground">
+                  Loading applications...
+                </div>
+              ) : viewModel.isError ? (
+                <div className="rounded-xl border border-dashed p-8 text-sm text-destructive">
+                  Could not load applications.
+                </div>
+              ) : (
+              <Tabs
+                value={dashboardView}
+                onValueChange={(value) =>
+                  dispatch(setDashboardView(value as typeof dashboardView))
+                }
+              >
                 <TabsList>
                   <TabsTrigger value="board">
                     <Columns3 className="size-4" />
@@ -161,12 +199,19 @@ export const Dashboard = () => {
                   <TabsTrigger value="analytics">Analytics</TabsTrigger>
                 </TabsList>
                 <TabsContent value="board" className="mt-4">
-                  <ApplicationBoard />
+                  <ApplicationBoard
+                    groupedApplications={viewModel.groupedApplications}
+                    onMoveApplication={handleMoveApplication}
+                  />
                 </TabsContent>
                 <TabsContent value="analytics" className="mt-4">
-                  <AnalyticsCards />
+                  <AnalyticsCards
+                    statusChartData={viewModel.statusChartData}
+                    trendChartData={viewModel.trendChartData}
+                  />
                 </TabsContent>
               </Tabs>
+              )}
             </CardContent>
           </Card>
 
@@ -177,11 +222,9 @@ export const Dashboard = () => {
                 <CardDescription>Highest impact actions for this week.</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-4">
-                {[
-                  "Prepare Spotify interview notes",
-                  "Respond to Wise offer by deadline",
-                  "Follow up with GitLab recruiter",
-                ].map((item, index) => (
+                {(viewModel.todayFocus.length
+                  ? viewModel.todayFocus
+                  : ["Create your first application"]).map((item, index) => (
                   <div className="flex items-center gap-3" key={item}>
                     <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
                       {index + 1}
@@ -198,20 +241,30 @@ export const Dashboard = () => {
                 <CardDescription>Interview momentum and response quality.</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-4">
-                <Progress value={62}>
+                <Progress value={responseRate}>
                   <div className="flex w-full items-center justify-between text-sm">
                     <span>Goal progress</span>
-                    <span className="text-muted-foreground">62%</span>
+                    <span className="text-muted-foreground">
+                      {viewModel.metrics[4]?.value ?? "0%"}
+                    </span>
                   </div>
                 </Progress>
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div className="rounded-lg bg-muted p-3">
                     <p className="text-muted-foreground">Avg. response</p>
-                    <p className="mt-1 font-semibold">4.2 days</p>
+                    <p className="mt-1 font-semibold">
+                      {viewModel.applications.length ? "Tracked" : "No data"}
+                    </p>
                   </div>
                   <div className="rounded-lg bg-muted p-3">
                     <p className="text-muted-foreground">High priority</p>
-                    <p className="mt-1 font-semibold">6 roles</p>
+                    <p className="mt-1 font-semibold">
+                      {
+                        viewModel.applications.filter(
+                          (application) => application.priority === "high"
+                        ).length
+                      } roles
+                    </p>
                   </div>
                 </div>
               </CardContent>

@@ -1,61 +1,34 @@
 "use client"
 
-import { useMemo, useState } from "react"
-import { toast } from "sonner"
+import { useState } from "react"
 
 import { ApplicationCard } from "@/components/offerpilot/application-card"
 import { Badge } from "@/components/ui/badge"
-import {
-  applications,
-  type ApplicationStatus,
-  type JobApplication,
-  statusLabels,
-  statusOrder,
-} from "@/lib/mock-data"
+import { statusLabels, statusOrder } from "@/features/applications/constants"
+import type {
+  ApplicationStatus,
+  JobApplication,
+} from "@/features/applications/types"
 
-export const ApplicationBoard = () => {
-  const [items, setItems] = useState<JobApplication[]>(applications)
+export const ApplicationBoard = ({
+  groupedApplications,
+  onMoveApplication,
+}: {
+  groupedApplications: Record<ApplicationStatus, JobApplication[]>
+  onMoveApplication: (application: JobApplication, status: ApplicationStatus) => void
+}) => {
   const [draggingId, setDraggingId] = useState<string | null>(null)
   const [dragOverStatus, setDragOverStatus] = useState<ApplicationStatus | null>(null)
 
-  const groupedApplications = useMemo(
-    () =>
-      statusOrder.reduce<Record<ApplicationStatus, JobApplication[]>>(
-        (acc, status) => {
-          acc[status] = items.filter((item) => item.status === status)
-          return acc
-        },
-        {
-          saved: [],
-          applied: [],
-          in_review: [],
-          interviewing: [],
-          technical_test: [],
-          offer: [],
-          rejected: [],
-          withdrawn: [],
-          ghosted: [],
-        }
-      ),
-    [items]
-  )
+  const applications = Object.values(groupedApplications).flat()
 
-  const moveApplication = (
-    applicationId: string,
-    nextStatus: ApplicationStatus
-  ) => {
-    const application = items.find((item) => item.id === applicationId)
-
+  const moveApplication = (applicationId: string, nextStatus: ApplicationStatus) => {
+    const application = applications.find((item) => item.id === applicationId)
     if (!application || application.status === nextStatus) {
       return
     }
 
-    setItems((current) =>
-      current.map((item) =>
-        item.id === applicationId ? { ...item, status: nextStatus, updatedAt: "Just now" } : item
-      )
-    )
-    toast.success(`${application.title} moved to ${statusLabels[nextStatus]}`)
+    onMoveApplication(application, nextStatus)
   }
 
   return (
@@ -65,7 +38,7 @@ export const ApplicationBoard = () => {
 
         return (
           <div
-            className="min-h-[420px] w-[260px] shrink-0 rounded-xl border bg-muted/45 p-3 transition-colors data-[drag-over=true]:border-primary data-[drag-over=true]:bg-primary/5"
+            className="min-h-[420px] w-[260px] shrink-0 rounded-xl border bg-muted/65 p-3 transition-colors data-[drag-over=true]:border-primary data-[drag-over=true]:bg-primary/10 dark:border-border/80"
             data-drag-over={dragOverStatus === status ? true : undefined}
             onDragLeave={() => setDragOverStatus(null)}
             onDragOver={(event) => {

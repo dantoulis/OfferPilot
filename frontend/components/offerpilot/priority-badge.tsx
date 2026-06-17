@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge"
+import type { Priority } from "@/features/applications/types"
 import { cn } from "@/lib/utils"
-import type { Priority } from "@/lib/mock-data"
 
 const priorityClassName: Record<Priority, string> = {
   low: "bg-muted text-muted-foreground",

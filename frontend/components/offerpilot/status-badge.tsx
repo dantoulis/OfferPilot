@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge"
+import { statusLabels } from "@/features/applications/constants"
+import type { ApplicationStatus } from "@/features/applications/types"
 import { cn } from "@/lib/utils"
-import type { ApplicationStatus } from "@/lib/mock-data"
-import { statusLabels } from "@/lib/mock-data"
 
 const statusClassName: Record<ApplicationStatus, string> = {
   saved: "bg-sky-500/10 text-sky-700 dark:text-sky-300",

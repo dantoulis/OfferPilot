@@ -12,7 +12,8 @@ import {
   CardDescription,
   CardHeader,
 } from "@/components/ui/card"
-import { formatSalary, type JobApplication } from "@/lib/mock-data"
+import { formatRelativeDate, formatSalary } from "@/features/applications/mappers"
+import type { JobApplication } from "@/features/applications/types"
 
 export const ApplicationCard = ({
   application,
@@ -50,7 +51,7 @@ export const ApplicationCard = ({
       </div>
       <p className="text-xs text-muted-foreground">{formatSalary(application)}</p>
       <div className="flex items-center justify-between text-xs text-muted-foreground">
-        <span>{application.updatedAt}</span>
+        <span>{formatRelativeDate(application.updatedAt)}</span>
         <WorkplaceBadge workplaceType={application.workplaceType} />
       </div>
     </CardContent>

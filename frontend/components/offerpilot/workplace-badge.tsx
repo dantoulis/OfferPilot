@@ -1,14 +1,13 @@
 import { Badge } from "@/components/ui/badge"
-import type { WorkplaceType } from "@/lib/mock-data"
-
-const workplaceLabel: Record<WorkplaceType, string> = {
-  remote: "Remote",
-  hybrid: "Hybrid",
-  onsite: "On-site",
-}
+import { workplaceLabels } from "@/features/applications/constants"
+import type { WorkplaceType } from "@/features/applications/types"
 
 export const WorkplaceBadge = ({
   workplaceType,
 }: {
-  workplaceType: WorkplaceType
-}) => <Badge variant="outline">{workplaceLabel[workplaceType]}</Badge>
+  workplaceType: WorkplaceType | ""
+}) => (
+  <Badge variant="outline">
+    {workplaceType ? workplaceLabels[workplaceType] : "Workplace not set"}
+  </Badge>
+)
