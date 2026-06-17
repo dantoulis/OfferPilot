@@ -5,7 +5,7 @@ export const ApplicationDetail = ({
   label: string
   value: string
 }) => (
-  <div className="rounded-lg bg-muted/50 p-4">
+  <div className="rounded-lg border bg-muted/65 p-4">
     <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
       {label}
     </p>
